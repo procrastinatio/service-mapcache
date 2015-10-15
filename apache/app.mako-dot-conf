@@ -1,0 +1,23 @@
+
+
+RewriteEngine On
+
+
+#RewriteRule ^/1.0.0/ch.swisstopo.pixelkarte-farbe/default/(\d+|current|default)/(\d+)/(\d+)/(\d+)/(\d+)(.*)  /wmts/1.0.0/ch.swisstopo.pixelkarte-farbe/default/$1/$2/$3/$5/$4$6 [L,QSA,PT]
+
+# Which order ?
+#RewriteRule ^/1.0.0/(.*)/default/(\d+|current|default)/(\d+)/(\d+)/(\d+)/(\d+)(.*)  /wmts/1.0.0/$1_$2/default/$3/$4/$6/$5$7 [L,QSA,PT]
+#RewriteRule ^/1.0.0/(.*)/default/(\d+|current|default)/(\d+)/(\d+)/(\d+)/(\d+)(.*)  /wmts/1.0.0/$1_$2/default/$3/$4/$5/$6$7 [L,QSA,PT]
+
+RewriteRule ^/1.0.0/(.*)/default/(\d+|current|default)/(\d+)/(\d+)/(\d+)/(\d+)(.*)  /wmts/1.0.0/$1/default/$2/$3/$4/$6/$5$7 [L,QSA,PT]
+
+
+Alias /checker /var/www/vhosts/service-mapcache/htdocs/checker
+
+<IfModule mapcache_module>
+   <Directory /path/to/directory>
+      Require all granted
+   </Directory>
+   MapCacheAlias ${apache_base_path}/ "${apache_base_directory}/mapcache.xml"
+</IfModule>
+
