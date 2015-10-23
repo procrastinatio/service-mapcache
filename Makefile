@@ -1,4 +1,4 @@
-APACHE_BASE_PATH ?= /$(shell id -un)
+lPACHE_BASE_PATH ?= /$(shell id -un)
 APACHE_BASE_DIRECTORY ?= $(CURDIR)
 MODWSGI_USER ?= $(shell id -un)
 API_URL ?= http://api3.geo.admin.ch
@@ -9,6 +9,16 @@ PYTHONVENV_OPTS ?= --system-site-packages
 ## So prepend all python scripts with python cmd
 ## See: https://bugs.launchpad.net/virtualenv/+bug/241581/comments/11
 PYTHON_CMD=.build-artefacts/python-venv/bin/python
+
+# Params:
+#   1. Variable name(s) to test.
+#   2. (optional) Error message to print.
+check_defined = \
+    $(foreach 1,$1,$(__check_defined))
+__check_defined = \
+    $(if $(value $1),, \
+      $(error Undefined $1$(if $(value 2), ($(strip $2)))))
+
 
 
 .PHONY: help
@@ -41,11 +51,14 @@ apache: apache/app.conf
 
 
 .PHONY: config
-config: .build-artefacts/python-venv \
+config: .build-artefacts/python-venv/bin/mapcache \
 	mapcache.xml
 	touch $@
 
-mapcache.xml: .build-artefacts/python-venv/bin/mapcache
+mapcache.xml:
+	$(call check_defined, MAPCACHE_ACCESS_KEY, AWS S3 access key)
+	$(call check_defined, MAPCACHE_SECRET_KEY, AWS S3 secret key)
+	$(call check_defined, MAPCACHE_BUCKET_NAME, AWS S3 bucket name for cache)
 	${PYTHON_CMD} scripts/mapcachify.py $(API_URL)   $< > $@
 
 .build-artefacts/python-venv/bin/mako-render: .build-artefacts/python-venv
@@ -67,10 +80,14 @@ mapcache: .build-artefacts/python-venv/bin/mapcache \
 	virtualenv ${PYTHONVENV_OPTS}  $@
 
 
-.build-artefacts/python-venv/bin/mapcache: .build-artefacts/python-venv
-        curl -o scripts/mapproxify.py https://raw.githubusercontent.com/geoadmin/service-mapproxy/master/mapproxy/scripts/mapproxify.py
+scripts/mapproxify.py:
+	curl -o scripts/mapproxify.py  'https://raw.githubusercontent.com/geoadmin/service-mapproxy/master/mapproxy/scripts/mapproxify.py' 
+
+.build-artefacts/python-venv/bin/mapcache: .build-artefacts/python-venv \
+	scripts/mapproxify.py
 	${PYTHON_CMD} .build-artefacts/python-venv/bin/pip install "httplib2==0.9.2"
-	touch $@
+
+    
 
 apache/app.conf: apache/app.mako-dot-conf 
 	${PYTHON_CMD} .build-artefacts/python-venv/bin/mako-render \
