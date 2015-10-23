@@ -7,18 +7,28 @@ from  xml.dom.minidom  import parseString
 from mapproxify import *
 
 
-INDEX = 5
-EPSGS = ['4326','21781','2056', '3857']
 
-#print DEFAULT_SERVICE_URL
+## Default (do not change)
 DEFAULT_WMTS_BASE_URL = 'http://internal-vpc-lb-internal-wmts-infra-1291171036.eu-west-1.elb.amazonaws.com'
+DEFAULT_WMS_SOURCE = 'http://wmts10.geo.admin.ch/mapproxy/service'
+
+## Bucket and credentials where tiles are goigin to be stored
+## You have to define these 3 VARIABLES....
+
 MAPCACHE_BUCKET_NAME = os.environ.get('MAPCACHE_BUCKET_NAME', None)
 MAPCACHE_ACCESS_KEY = os.environ.get('MAPCACHE_ACCESS_KEY', None)
 MAPCACHE_SECRET_KEY = os.environ.get('MAPCACHE_SECRET_KEY', None)
-WMTS_BASE_URL = os.environ.get('WMTS_BASE_URL', DEFAULT_WMTS_BASE_URL)
 
+## WMS source (Complete URL able to answer a GetCapabilities request)
+WMS_SOURCE = os.environ.get('WMS_SOURCE', DEFAULT_WMS_SOURCE)
 
-if MAPCACHE_ACCESS_KEY is None or MAPCACHE_SECRET_KEY is None:
+## Projection to server. The WMS_SOURCE has to provide them
+EPSGS = ['4326','21781','2056', '3857']
+
+## Where the new source/tileindex are going to be added in the mappcache.tpl
+INDEX = 5
+
+if MAPCACHE_ACCESS_KEY is None or MAPCACHE_SECRET_KEY is None or MAPCACHE_BUCKET_NAME is None:
     print "You must provide S3 credentials"
     sys.exit(3)
 
@@ -41,14 +51,12 @@ http_str='''<http>
 
 
 topics = getTopics()
-#print topics
 
 layers_nb, timestamps_nb, layersConfig = getLayersConfigs(topics=topics)
 
 
 tree = ET.parse('scripts/mapcache.tpl')
 root = tree.getroot()
-#print root
 
 #for el in root.getchildren():
 #    print root.getchildren().index(el), el
@@ -58,10 +66,9 @@ root = tree.getroot()
 # set secret stuff
 
 s3 = tree.find(".//cache[@name='s3']")
-# >http://abcd-tiles-cache.s3.amazonaws.com/1.0.0/{tileset}/default/{dim}/{grid}/{z}/{x}/{y}.{ext}
 
 url = s3.find('./url')
-url.text = "http://" + WMTS_BASE_URL + ".s3.amazonaws.com/1.0.0/{tileset}/default/{dim}/{grid}/{z}/{x}/{y}.{ext}"
+url.text = "http://" + MAPCACHE_BUCKET_NAME + ".s3.amazonaws.com/1.0.0/{tileset}/default/{dim}/{grid}/{z}/{x}/{y}.{ext}"
 id = s3.find('./id')
 id.text=MAPCACHE_ACCESS_KEY
 secret = s3.find('./secret')
@@ -112,6 +119,10 @@ for lyr in layersConfig:
     layers = ET.SubElement(params,'LAYERS')
     layers.text = lyr.bodLayerId
     http = ET.fromstring(http_str)
+    url = http.find('./url')
+    url.text = WMS_SOURCE
+
+    
 
     source.append(http)
     
