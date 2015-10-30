@@ -69,6 +69,8 @@ s3 = tree.find(".//cache[@name='s3']")
 
 url = s3.find('./url')
 url.text = "http://" + MAPCACHE_BUCKET_NAME + ".s3.amazonaws.com/1.0.0/{tileset}/default/{dim}/{grid}/{z}/{x}/{y}.{ext}"
+host=s3.find('./headers/Host')
+host.text=MAPCACHE_BUCKET_NAME
 id = s3.find('./id')
 id.text=MAPCACHE_ACCESS_KEY
 secret = s3.find('./secret')
