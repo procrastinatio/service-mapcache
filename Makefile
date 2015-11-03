@@ -1,4 +1,4 @@
-lPACHE_BASE_PATH ?= /$(shell id -un)
+APACHE_BASE_PATH ?= /$(shell id -un)
 APACHE_BASE_DIRECTORY ?= $(CURDIR)
 MODWSGI_USER ?= $(shell id -un)
 API_URL ?= http://api3.geo.admin.ch
